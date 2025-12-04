@@ -1,8 +1,8 @@
 name: Sonar Continuos Integration
 env:
   DOTNET_VERSION: '9.0.x'
-  SONAR_ORG: 'ORGANIZATION'
-  SONAR_PROJECT: 'PROJECT_KEY'
+  SONAR_ORG: 'vlkair'
+  SONAR_PROJECT: 'vlkair_apibank'
 on:
   push:
     branches: [ "main" ]
