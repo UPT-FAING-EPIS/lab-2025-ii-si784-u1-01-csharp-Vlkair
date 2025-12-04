@@ -201,7 +201,144 @@ jobs:
 
 ---
 ## Actividades Encargadas
-1. Adicionar un metodos de prueba para verificar el método de crédito.
-2. Adjuntar la captura donde se evidencia el incremento del valor de cobertura en SonarCloud en un archivo cobertura.png.
-3. Adicionar a la automatizacion la construcción del archivo .nuget y la publicación como paquete en su repositorio de Github
-4. Adicionar a la automatizacion la generación del release de la versión 1.0.0 del nuget, debe indicar las modificaciones del paquete en base a los comentarios de los commits realizados
+
+### 1. Método de Prueba para Crédito
+Se ha adicionado el método de prueba `Credit_WithValidAmount_UpdatesBalance()` en el archivo `BankAccountTests.cs` para verificar el correcto funcionamiento del método `Credit()` de la clase `BankAccount`.
+
+**Código implementado:**
+```csharp
+[TestMethod]
+public void Credit_WithValidAmount_UpdatesBalance()
+{
+    double beginningBalance = 11.99;
+    double creditAmount = 5.01;
+    double expected = 17.00;
+    var account = new BankAccount("Mr. Bryan Walton", beginningBalance);
+
+    account.Credit(creditAmount);
+
+    double actual = account.Balance;
+    Assert.AreEqual(expected, actual, 0.001);
+}
+```
+
+Este test verifica que:
+- El método `Credit()` incrementa correctamente el balance de la cuenta
+- Se valida con un balance inicial de 11.99, se acreditan 5.01 y se espera un resultado de 17.00
+- La precisión de comparación es de 0.001 para valores decimales
+
+### 2. Cobertura de Código en SonarCloud
+Se ha incrementado la cobertura de código mediante la adición de pruebas unitarias. La evidencia del incremento de cobertura se encuentra en el archivo `cobertura.png` ubicado en la raíz del repositorio.
+
+**Verificación de cobertura:**
+- Las pruebas se ejecutan con el comando: `dotnet test --collect:"XPlat Code Coverage;Format=opencover"`
+- Los reportes de cobertura se generan en formato OpenCover
+- SonarCloud analiza automáticamente la cobertura en cada push al repositorio
+
+### 3. Automatización de Construcción y Publicación del Paquete NuGet
+Se ha configurado el workflow de GitHub Actions (`sonar.yml`) para construir y publicar automáticamente el paquete NuGet en GitHub Packages.
+
+**Configuración implementada:**
+```yaml
+- name: Empaquetar NuGet
+  run: dotnet pack ./Bank/Bank.Domain/Bank.Domain.csproj -c Release -o ./artifacts
+
+- name: Publicar paquete en GitHub Packages
+  env:
+    NUGET_SOURCE: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
+    NUGET_API_KEY: ${{ secrets.GITHUB_TOKEN }}
+  run: dotnet nuget push ./artifacts/*.nupkg --source $NUGET_SOURCE --api-key $NUGET_API_KEY --skip-duplicate
+```
+
+**Características:**
+- El paquete se construye en configuración Release
+- Se genera en la carpeta `./artifacts`
+- Se publica automáticamente en GitHub Packages
+- Utiliza el token de GitHub Actions para autenticación
+- La opción `--skip-duplicate` evita errores si el paquete ya existe
+
+### 4. Generación Automática de Release v1.0.0
+Se ha implementado la generación automática del release v1.0.0 con las notas de los commits realizados.
+
+**Configuración implementada:**
+```yaml
+- name: Crear release v1.0.0 con notas de commits
+  uses: softprops/action-gh-release@v2
+  with:
+    tag_name: v1.0.0
+    name: v1.0.0
+    generate_release_notes: true
+    files: artifacts/*.nupkg
+  env:
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+**Características del Release:**
+- **Tag:** v1.0.0
+- **Generación automática de notas:** Utiliza `generate_release_notes: true` para crear automáticamente las notas basadas en los commits
+- **Archivos adjuntos:** Se incluyen los paquetes .nupkg generados
+- **Historial de cambios:** Las notas del release documentan todas las modificaciones realizadas desde el inicio del proyecto
+
+---
+
+## Flujo de Integración Continua Completo
+
+El workflow completo de GitHub Actions realiza las siguientes operaciones:
+
+1. **Checkout del código:** Descarga el repositorio
+2. **Configuración del entorno:** Instala Java 17 y .NET 9.0.x
+3. **Instalación de herramientas:** Instala dotnet-sonarscanner
+4. **Restauración de dependencias:** Ejecuta `dotnet restore`
+5. **Ejecución de pruebas:** Corre las pruebas con cobertura de código
+6. **Análisis de SonarCloud:** 
+   - Inicia el análisis con `dotnet-sonarscanner begin`
+   - Compila la solución en modo Release
+   - Finaliza el análisis con `dotnet-sonarscanner end`
+7. **Empaquetado NuGet:** Crea el paquete .nupkg
+8. **Publicación:** Publica el paquete en GitHub Packages
+9. **Release:** Crea el release v1.0.0 con notas automáticas
+
+---
+
+## Comandos Útiles
+
+### Ejecución Local de Pruebas
+```bash
+# Restaurar dependencias
+dotnet restore
+
+# Ejecutar pruebas con cobertura
+dotnet test --collect:"XPlat Code Coverage;Format=opencover"
+
+# Compilar en modo Release
+dotnet build --configuration Release
+
+# Crear paquete NuGet
+dotnet pack ./Bank/Bank.Domain/Bank.Domain.csproj -c Release -o ./artifacts
+```
+
+### Análisis Local con SonarCloud
+```bash
+# Iniciar análisis
+dotnet sonarscanner begin /k:"PROJECT_KEY" /d:sonar.token="TOKEN" /d:sonar.host.url="https://sonarcloud.io" /o:"ORGANIZATION" /d:sonar.cs.opencover.reportsPaths="*/*/*/coverage.opencover.xml"
+
+# Compilar
+dotnet build --no-incremental
+
+# Ejecutar pruebas
+dotnet test --collect:"XPlat Code Coverage;Format=opencover"
+
+# Finalizar análisis
+dotnet sonarscanner end /d:sonar.token="TOKEN"
+```
+
+---
+
+## Resultado Final
+
+✅ **Actividad 1:** Método de prueba `Credit_WithValidAmount_UpdatesBalance()` implementado  
+✅ **Actividad 2:** Cobertura de código verificada en SonarCloud (ver `cobertura.png`)  
+✅ **Actividad 3:** Pipeline de empaquetado y publicación NuGet configurado  
+✅ **Actividad 4:** Generación automática de release v1.0.0 con notas de commits  
+
+El proyecto ahora cuenta con integración continua completa que incluye análisis de calidad de código, pruebas unitarias con cobertura, empaquetado automático y publicación de releases.
